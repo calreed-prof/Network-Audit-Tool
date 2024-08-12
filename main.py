@@ -1,30 +1,74 @@
 import os
 import speedtest
+import sys
+import itertools
+import time
+import threading
+import json
+
+s = sys.stdout
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+def clear_line():
+    sys.stdout.write('\r\033[K')
+    sys.stdout.flush()
+
+# Saves Cached Servers to a JSON
+def save_cached_server(server_info):
+    with open('cached_server.json', 'w')as f:
+        json.dump(server_info, f)
+
+# Tries to Load Cached server
+def load_cached_server():
+    try:
+        with open('cached_server.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+# Made my own best server function to cache servers
+def get_best_server():
+    st = speedtest.Speedtest()
+    cached_server = load_cached_server()
+
+    # Checks if cached server is empty or not
+    if cached_server:
+        print(f"Using cached server: {cached_server['host']} located in {cached_server['country']}")
+        return cached_server
+    else:
+        print("Please note: The initial run may take longer than usual.")
+        best_server = st.get_best_server()
+        save_cached_server(best_server)
+        print(f"Cached new server: {best_server['host']} located in {best_server['country']}")
+        return best_server
+
+
 def speedtestp():
     clear_screen()
-    print("Loading...")
-
     st = speedtest.Speedtest()
 
-    best_server = st.get_best_server()
+    # Get best server
+    best_server = get_best_server()
+    clear_line()
 
-    print(f"Found Best Server!\n- Name: {best_server['name']}\n- Country: {best_server['country']}")
+    # Test Download Speed
+    s.write("Testing Download Speed...")
+    s.flush()
+    dspeed = st.download() / 1_000_000 # Convert to mbps
+    clear_line()
 
-    download_speed = st.download()
-    print("Testing Download Speed")
+    # Test Upload Speed
+    s.write("Testing Upload Speed...")
+    s.flush()
+    uspeed = st.upload() / 1_000_000 # Convert to mbps
+    clear_line()
 
-    upload_speed = st.upload()
-    print("Testing Upload Speed")
+    # print(f"Server Used: {best_server['host']} located in {best_server['country']}")
+    print(f"Download Speed: {dspeed:.2f} mbps")
+    print(f"Upload Speed: {uspeed:.2f} mbps")
 
-    dspeed_mbps = download_speed / 1_000_000
-    uspeed_mbps = upload_speed / 1_000_000
-
-    print(f"\nDownload speed: {dspeed_mbps:.2f} mbps")
-    print(f"Upload Speed: {uspeed_mbps:.2f} mbps")
 
 def main_menu():
     # Clears Screen

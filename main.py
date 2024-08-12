@@ -5,6 +5,7 @@ import itertools
 import time
 import threading
 import json
+from datetime import datetime
 
 s = sys.stdout
 
@@ -28,6 +29,11 @@ def load_cached_server():
     except FileNotFoundError:
         return None
 
+def save_test(dspeed, uspeed):
+    current_time = datetime.now()
+    with open('speed_test_records.txt', 'a') as f:
+        f.write(f"{current_time} - Download Speed {dspeed:.2f} mbps - Upload Speed: {uspeed:.2f} mbps\n")
+
 # Made my own best server function to cache servers
 def get_best_server():
     st = speedtest.Speedtest()
@@ -43,7 +49,6 @@ def get_best_server():
         save_cached_server(best_server)
         print(f"Cached new server: {best_server['host']} located in {best_server['country']}")
         return best_server
-
 
 def speedtestp():
     clear_screen()
@@ -65,10 +70,10 @@ def speedtestp():
     uspeed = st.upload() / 1_000_000 # Convert to mbps
     clear_line()
 
-    # print(f"Server Used: {best_server['host']} located in {best_server['country']}")
+    # print(f"Server Used: {best_server['host']} located in {best_server['country']}") - This is Redundant
+    save_test(dspeed, uspeed)
     print(f"Download Speed: {dspeed:.2f} mbps")
     print(f"Upload Speed: {uspeed:.2f} mbps")
-
 
 def main_menu():
     # Clears Screen
@@ -78,7 +83,7 @@ def main_menu():
 2. Scan for Connected Devices
 3. Scan Ports
 4. Vulnerability Assessment
-5. Log Analysis\n          
+5. Log Analysis\n
 > """)
     
     if option == '1':

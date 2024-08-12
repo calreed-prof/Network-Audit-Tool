@@ -1,11 +1,14 @@
 import os
 import speedtest
 import sys
-import itertools
 import time
-import threading
 import json
 from datetime import datetime
+from scapy.all import ARP, srp
+import subprocess
+import ipaddress
+import platform
+import re
 
 s = sys.stdout
 
@@ -74,6 +77,54 @@ def speedtestp():
     save_test(dspeed, uspeed)
     print(f"Download Speed: {dspeed:.2f} mbps")
     print(f"Upload Speed: {uspeed:.2f} mbps")
+
+def get_ip_address():
+    clear_screen()
+    # Find the Operating System
+    system = platform.system()
+
+    if system == "Windows":
+        command = "ipconfig"
+        pattern = r"IPv4 Address.*: ([\d\.]+)"  # Adjusted Regex
+    else:
+        command = "ifconfig"
+        pattern = r"inet\s([\d\.]+)\s"  # Adjusted Regex
+
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    output = result.stdout
+
+    matches = re.findall(pattern, output)
+    if matches:
+        if len(matches) > 1:
+            print("Multiple Addresses Found:")
+            for idx, match in enumerate(matches):
+                print(f"{idx + 1}: {match}")
+            while True:
+                choice = input("Please Select the Addr you would like to Use > ")
+                try:
+                    selected_ip = matches[int(choice) - 1]
+                    # print(f"Selected IP Address: {selected_ip}")
+                    return selected_ip
+                    break
+                except(IndexError, ValueError):
+                    print("Invalid Selection")
+        else:
+            selected_ip = match[0]
+            # print(f"Automatically Select Ip Addr: {selected_ip}")
+            return selected_ip
+    else:
+        print("No Addresses Found")
+
+def get_network_address(ip_address):
+    ip_interface = ipaddress.ip_interface(f"{ip_address}/24")
+    return ip_interface.network
+
+def connected_devices():
+    ip_address = get_ip_address()
+    network_address = get_network_address(ip_address)
+    clear_screen()
+    print(f"Device IP Address: {ip_address}")
+    print(f"Network Interface: {network_address}")
 
 def main_menu():
     # Clears Screen

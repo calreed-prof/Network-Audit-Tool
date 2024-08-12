@@ -4,6 +4,7 @@ import sys
 import time
 import json
 from datetime import datetime
+from scapy.all import Ether, conf
 from scapy.all import ARP, srp
 import subprocess
 import ipaddress
@@ -119,12 +120,21 @@ def get_network_address(ip_address):
     ip_interface = ipaddress.ip_interface(f"{ip_address}/24")
     return ip_interface.network
 
+def get_default_interface():
+    default_iface = conf.route.route("0.0.0.0")[0]
+    return default_iface
+
+def scan_network(network):
+    print("Scanning")
+
 def connected_devices():
     ip_address = get_ip_address()
     network_address = get_network_address(ip_address)
     clear_screen()
     print(f"Device IP Address: {ip_address}")
     print(f"Network Interface: {network_address}")
+
+    scan_network(network=network_address)
 
 def main_menu():
     # Clears Screen

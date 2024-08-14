@@ -107,7 +107,6 @@ def get_ip_address():
                     selected_ip = matches[int(choice) - 1]
                     # print(f"Selected IP Address: {selected_ip}")
                     return selected_ip
-                    break
                 except(IndexError, ValueError):
                     print("Invalid Selection")
         else:
@@ -166,7 +165,8 @@ def connected_devices():
 
 def port_scan(target):
     nm = nmap.PortScanner()
-    nm.scan(target, '1-1024')
+    target = str(target)
+    nm.scan(hosts=target, ports='1-1024', arguments='-sS')
     
     for host in nm.all_hosts():
         # Prints the item that was scanned, as well as the hostname
@@ -186,12 +186,26 @@ def port_scan_menu():
     option = input("What would you like to scan?\n1) Host Machine\n2) Network Devices\n\n> ")
     
     if option == '1':
+        clear_screen()
+        print("Scanning Host...")
         host = '127.0.0.1'
         port_scan(host)
+        input("Press Enter to Return to Menu...")
     elif option == '2':
-        ip_address = get_ip_address()
-        network_address = get_network_address(ip_address=ip_address)
-        port_scan(network_address)
+        clear_screen()
+        print("Scanning Network...")
+        try:
+            ip_address = get_ip_address()
+            print(ip_address)
+            network_address = get_network_address(ip_address=str(ip_address))
+            print(network_address, type(network_address))
+            port_scan(network_address)
+            input("Press Enter to Return to Main Menu...")
+            main_menu()
+        except AssertionError as e:
+            print(f"Error: {e}")
+            input("Press Enter to Return to Main Menu...")
+            main_menu()
 
 def main_menu():
     # Clears Screen
@@ -201,7 +215,8 @@ def main_menu():
 2. Scan for Connected Devices
 3. Scan Ports
 4. Vulnerability Assessment
-5. Log Analysis\n
+5. Log Analysis
+6. Exit\n
 > """)
     
     if option == '1':
@@ -214,6 +229,9 @@ def main_menu():
         vuln_assessment()
     elif option == '5':
         log_analysis()
+    elif option == '6':
+        clear_screen()
+        exit()
     else:
         input("Invalid Input, Press Enter to Continuee...")
         main_menu()

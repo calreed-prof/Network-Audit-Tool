@@ -1,7 +1,7 @@
 import os
 import speedtest
 import sys
-import time
+import csv
 import json
 from datetime import datetime
 from scapy.all import conf
@@ -143,8 +143,26 @@ def scan_network(network):
     return devices
 
 def save_to_csv(devices, filename="network_devices.csv"):
-    # CSV Name
-    print("Nice")
+    """Saves scanned network devices to a CSV file"""
+    # Specify the headers for the CSV file
+    headers = ['IP Address', 'MAC Address']
+
+    try:
+        # Open the CSV file for writing
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=headers)
+
+            # Write the headers to the CSV file
+            writer.writeheader()
+
+            # Write the device data to the CSV file
+            for device in devices:
+                writer.writerow({'IP Address': device['ip'], 'MAC Address': device['mac']})
+
+        print(f"Devices saved successfully to {filename}")
+
+    except IOError:
+        print("I/O error occurred while writing the file")
 
 def connected_devices():
     ip_address = get_ip_address()
@@ -196,16 +214,63 @@ def port_scan_menu():
         print("Scanning Network...")
         try:
             ip_address = get_ip_address()
-            print(ip_address)
             network_address = get_network_address(ip_address=str(ip_address))
-            print(network_address, type(network_address))
             port_scan(network_address)
             input("Press Enter to Return to Main Menu...")
             main_menu()
-        except AssertionError as e:
+        except Exception as e:
             print(f"Error: {e}")
             input("Press Enter to Return to Main Menu...")
             main_menu()
+
+def save_vuln_out(output):
+    current_time = datetime.now()
+    with open('vuln_assessment_results.txt', 'a') as f:
+        f.write(f"---------------------------\n{current_time}\n{output}\n---------------------------")
+
+def vuln_assessment():
+    clear_screen()
+    nm = nmap.PortScanner()
+    scan_args = '-sV --script=vuln'
+
+    try:
+        ipaddr = get_ip_address()
+        networkaddr = get_network_address(str(ipaddr))
+
+        clear_screen()
+        print(f"Starting Vuln Scan on {networkaddr}")
+        print(f"Please be Patient, these scans can take upward of 5 minutes.")
+        scan_output = nm.scan(hosts=str(networkaddr), arguments=scan_args)
+
+        for host in nm.all_hosts():
+            print(f"\nHost: {host} ({nm[host].hostname()})")
+            print(f"State: {nm[host].state()}")
+            
+            for proto in nm[host].all_protocols():
+                print(f"Protocol: {proto}")
+                
+                ports = nm[host][proto].keys()
+                for port in ports:
+                    service = nm[host][proto][port]
+                    print(f"Port: {port}")
+                    print(f"Service: {service['name']} ({service['product']} {service['version']})")
+                    print(f"State: {service['state']}")
+                    if 'script' in service:
+                        for script, output in service['script'].items():
+                            print(f"Script: {script}")
+                            print(f"Output: {output}")
+
+        print("Scan complete.\n")
+
+        save_option = input("Would you like to save this output to a txt file? (y/n) \n > ")
+        if save_option == 'y':
+            save_vuln_out(scan_output)
+        else:
+            main_menu()
+
+    except Exception as e:
+        input(f"An Error Occured: {e}, Press Enter to Continue...")
+        main_menu()
 
 def main_menu():
     # Clears Screen
@@ -215,8 +280,7 @@ def main_menu():
 2. Scan for Connected Devices
 3. Scan Ports
 4. Vulnerability Assessment
-5. Log Analysis
-6. Exit\n
+5. Exit\n
 > """)
     
     if option == '1':
@@ -228,8 +292,6 @@ def main_menu():
     elif option == '4':
         vuln_assessment()
     elif option == '5':
-        log_analysis()
-    elif option == '6':
         clear_screen()
         exit()
     else:
